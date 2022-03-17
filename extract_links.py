@@ -64,7 +64,7 @@ def map_main_article(dump, path):
             
             yield page.id, page.title, links
 
-           
+
 if args.folder:
     xmlfile = glob(f"{args.xmlfile}/*.xml-*")
 else:
@@ -73,17 +73,17 @@ else:
 for id, title, links in mwxml.map(map_main_article, xmlfile, threads=args.threads):
     pbar.update(1)
     if len(links) != 0:
-        main_articles.append(f"{id} {title} {str(links)}\n")
+        main_articles.append((id, title, str(links)))
 
+result = sorted(main_articles, key=lambda item: item[0], reverse=False)
 with open(args.output, 'w') as f:
-    for each in main_articles:
-        f.write(each)
+    for (id, title, links) in result:
+        f.write(f"{id} {title} {links}\n")
 
-result = dict(sorted(heading_freq.items(), key=lambda item: item[1], reverse=True))
+result1 = dict(sorted(heading_freq.items(), key=lambda item: item[1], reverse=True))
 with open(args.frequency, 'w') as f:
-    f.write(json.dumps(result))
+    f.write(json.dumps(result1))
 
 result2 = dict(sorted(word_freq.items(), key=lambda item: item[1], reverse=True))
 with open(args.words, 'w') as f:
     f.write(json.dumps(result2))
-
