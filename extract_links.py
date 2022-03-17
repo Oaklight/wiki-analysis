@@ -43,26 +43,14 @@ def map_main_article(dump, path):
     for page in dump:
         for rev in page:
             links = []
+            headings = []
             if rev.text is not None:
-                headings = h.findall(rev.text)
-                words = [w.strip() for hd in headings for w in hd.lower().split()]
-                for each in headings:
-                    each = each.strip()
-                    if each in heading_freq:
-                        heading_freq[each] += 1
-                    else:
-                        heading_freq[each] = 1
-                for each in words:
-                    if each in word_freq:
-                        word_freq[each] += 1
-                    else:
-                        word_freq[each] = 1
-            
+                headings = h.findall(rev.text)            
                 links = p.findall(rev.text)
                 if len(links) != 0:
                     links = [e.strip() for l in links for e in l.split('|')]
             
-            yield page.id, page.title, links
+            yield page.id, page.title, links, headings
 
 
 if args.folder:
@@ -70,8 +58,21 @@ if args.folder:
 else:
     xmlfile = [args.xmlfile]
 
-for id, title, links in mwxml.map(map_main_article, xmlfile, threads=args.threads):
+for id, title, links, headings in mwxml.map(map_main_article, xmlfile, threads=args.threads):
     pbar.update(1)
+    if len(headings) != 0:
+        words = [w.strip() for hd in headings for w in hd.lower().split()]
+        for each in headings:
+            each = each.strip()
+            if each in heading_freq:
+                heading_freq[each] += 1
+            else:
+                heading_freq[each] = 1
+        for each in words:
+            if each in word_freq:
+                word_freq[each] += 1
+            else:
+                word_freq[each] = 1
     if len(links) != 0:
         main_articles.append((id, title, str(links)))
 
