@@ -1,4 +1,5 @@
 # Usage
+```
 usage: extract_links.py [-h] [--folder] [-o OUTPUT] [-f FREQUENCY] [-w WORDS] [-n THREADS]
                         xmlfile index
 
@@ -19,6 +20,7 @@ optional arguments:
                         path to store words frequency
   -n THREADS, --threads THREADS
                         number of parallel processes
+```
 
 # examples
 ## 1 big dump
