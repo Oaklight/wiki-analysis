@@ -1,6 +1,8 @@
 # Usage
 ```
-usage: extract_links.py [-h] [--folder] [--counting] [-o OUTPUT] [-f FREQUENCY] [-w WORDS] [-n THREADS] xmlfile index
+usage: extract_links.py [-h] [--folder] [--counting_only] [-o OUTPUT] [-f FREQUENCY] [-w WORDS] [-k KEYWORDS]
+                        [-kt KEYWORDS_THRESHOLD] [-n THREADS]
+                        xmlfile index
 
 extract backlinks with "main article" hints
 
@@ -11,15 +13,20 @@ positional arguments:
 optional arguments:
   -h, --help            show this help message and exit
   --folder              (True | False[default]), if toggled, treat each line in xmlfiles as xml file path
-  --counting            (True | False[default]), if toggled, only count how many pages with "main article" hints
+  --counting_only       (True | False[default]), if toggled, only count how many pages with "main article" hints; It overrides
+                        all other flags and I/O options
   -o OUTPUT, --output OUTPUT
-                        path to store output file
+                        default: output.txt | path to store output file
   -f FREQUENCY, --frequency FREQUENCY
-                        path to store heading frequency
+                        default: None | path to store heading frequency
   -w WORDS, --words WORDS
-                        path to store words frequency
+                        default: None | path to store words frequency
+  -k KEYWORDS, --keywords KEYWORDS
+                        default: None | path to provided keyword list
+  -kt KEYWORDS_THRESHOLD, --keywords_threshold KEYWORDS_THRESHOLD
+                        default: 0 | minimal number of keywords matches for a wiki page to be counted as selected
   -n THREADS, --threads THREADS
-                        number of parallel processes
+                        default: os.cpu_count()-1 | number of parallel processes
 ```
 
 # examples
