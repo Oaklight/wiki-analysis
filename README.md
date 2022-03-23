@@ -1,7 +1,6 @@
 # Usage
 ```
-usage: extract_links.py [-h] [--folder] [-o OUTPUT] [-f FREQUENCY] [-w WORDS] [-n THREADS]
-                        xmlfile index
+usage: extract_links.py [-h] [--folder] [--counting] [-o OUTPUT] [-f FREQUENCY] [-w WORDS] [-n THREADS] xmlfile index
 
 extract backlinks with "main article" hints
 
@@ -11,7 +10,8 @@ positional arguments:
 
 optional arguments:
   -h, --help            show this help message and exit
-  --folder              (true | false), if toggled, treat each lines in xmlfiles as xml path
+  --folder              (True | False[default]), if toggled, treat each line in xmlfiles as xml file path
+  --counting            (True | False[default]), if toggled, only count how many pages with "main article" hints
   -o OUTPUT, --output OUTPUT
                         path to store output file
   -f FREQUENCY, --frequency FREQUENCY
