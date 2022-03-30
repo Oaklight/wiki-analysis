@@ -54,7 +54,11 @@ enwiki-20220301-pages-articles-multistream1.xml-p1p41242.bz2 246.2 MB
 enwiki-20220301-pages-articles-multistream-index1.txt-p1p41242.bz2 221 KB
 ...
 ```
+### data download
+`aria2c -j3 -i index.html --deferred-input --auto-file-renaming=false`
+where `index.html` is edited from https://dumps.wikimedia.org/enwiki/20220301/index.html, included in dir shards/
 
+### decompress
 decompress files with lbzip2 (faster):
 `lbzip2 -d -k -f -v *.bz2`
 
