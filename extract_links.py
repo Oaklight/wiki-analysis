@@ -7,6 +7,7 @@ from glob import glob
 from subprocess import check_output
 
 import mwxml
+import pandas as pd
 import nltk
 from tqdm import tqdm
 
@@ -28,6 +29,8 @@ parser.add_argument('-k', '--keywords', type=str, default=None,
                    help='default: None | path to provided keyword list')
 parser.add_argument('-kt', '--keywords_threshold', type=int, default=0,
                    help='default: 0 | minimal number of keywords matches for a wiki page to be counted as selected')
+parser.add_argument('-oma', '--only_ma', type=str, default=None,
+                   help='default: None | path to store headings of "only-in-main-articles" pages')
 parser.add_argument('-n', '--threads', type=int, default=os.cpu_count()-1,
                    help='default: os.cpu_count()-1 | number of parallel processes')
 
@@ -36,7 +39,7 @@ args = parser.parse_args()
 # get_ipython().system('cat {args.xmlfile} | grep "main article" | wc -l')
 
 punc_space = re.compile("[^" + string.punctuation + " \t\n\r\f\v]+")
-p = re.compile("{{[mM]ain article\|(?P<backlink>[^\<\[\}]*)}}")
+p = re.compile("{{[mM]ain(?: article)?\|(?P<backlink>[^\<\[\}]*)}}")
 h = re.compile("={2,}(?P<heading>[^\[=]*)={2,}")
 heading_freq = {} # whole headings
 word_freq = {} # words using in headings
@@ -48,27 +51,31 @@ def wc(filename):
 
 def map_main_article(dump, path):
     for page in dump:
-        for rev in page:
-            links = []
-            headings = []
-            if rev.text is not None:
-                headings = h.findall(rev.text)
-                words = [w for hd in headings for w in punc_space.findall(hd.lower())] # stemmer.stem(w) will give more hits
-                hit = False
-                if args.keywords is not None:
-                    keywords_match = 0
-                    for each in words:
-                        if keywords_match > args.keywords_threshold:
-                            hit = True
-                            break
-                        if each in keywords:
-                            keywords_match += 1
-                
-                links = p.findall(rev.text)
-                if len(links) != 0:
-                    links = [e.strip() for l in links for e in l.split('|')]
-            
-            yield page.id, page.title, links, headings, words, hit
+        if page.namespace == 0:
+            for rev in page:
+                links = []
+                headings = []
+                if rev.text is not None:
+                    headings = h.findall(rev.text)
+                    words = [w for hd in headings for w in punc_space.findall(hd.lower())] # stemmer.stem(w) will give more hits
+                    hit = False
+                    if args.keywords is not None:
+                        keywords_match = 0
+                        for each in words:
+                            if keywords_match > args.keywords_threshold:
+                                hit = True
+                                break
+                            if each in keywords:
+                                keywords_match += 1
+
+                    links = p.findall(rev.text)
+                    if len(links) != 0:
+                        links = [e.strip() for l in links for e in l.split('|')]
+
+                yield page.id, page.title, links, headings, words, hit
+
+        else:
+            yield None, None, None, None, None, None
 
 
 stemmer = nltk.stem.porter.PorterStemmer()
@@ -91,11 +98,14 @@ pbar = tqdm(total=wc(args.index))
 for id, title, links, headings, words, hit in mwxml.map(map_main_article, xmlfile, threads=args.threads):
     pbar.update(1)
     
+    if id is None:
+        continue
+    
     if len(links) != 0:
         count += 1
         if args.counting_only:
             continue
-        main_articles.append((id, title, str(links)))
+        main_articles.append((id, title, str(links), str(headings)))
     
     if len(headings) != 0:
         if args.frequency is not None:
@@ -115,29 +125,42 @@ for id, title, links, headings, words, hit in mwxml.map(map_main_article, xmlfil
                     else:
                         word_freq[each] = 1
             if args.keywords is not None and hit:
-                hits.append((id, title, str(links)))
+                hits.append((id, title, str(links), str(headings)))
 
 print(f'number of pages with main-article hints: {count}')
 if not args.counting_only:
     
+    # all-main-article-trick results
     result = sorted(main_articles, key=lambda item: item[0], reverse=False)
     with open(args.output, 'w') as f:
-        for (id, title, links) in result:
+        for (id, title, links, _) in result:
             f.write(f"{id} {title} {links}\n")
 
+    # all-heading-freq results
     if args.frequency is not None:
         result1 = dict(sorted(heading_freq.items(), key=lambda item: item[1], reverse=True))
         with open(args.frequency, 'w') as f:
             f.write(json.dumps(result1))
 
+    # all-words-in-heading-freq results
     if args.words is not None:
         result2 = dict(sorted(word_freq.items(), key=lambda item: item[1], reverse=True))
         with open(args.words, 'w') as f:
             f.write(json.dumps(result2))
     
+    # all-keyword-match results
     if args.keywords is not None:
         result3 = sorted(hits, key=lambda item: item[0], reverse=False)
         print(f'number of pages with more than {args.keywords_threshold} keywords match hints: {len(result3)}')
         with open(args.output+"-keywords-match.txt", 'w') as f:
-            for (id, title, links) in result3:
+            for (id, title, links, _) in result3:
                 f.write(f"{id} {title} {links}\n")
+    
+    # pages only in main-article-trick
+    if args.only_ma is not None:
+        keyword_match_pool = set(result3)
+        with open(args.only_ma, "w") as f:
+            for each in result:
+                if each not in keyword_match_pool:
+                    (id, title, links, headings) = each
+                    f.write(f"{id} {title} {links} {headings}\n")
